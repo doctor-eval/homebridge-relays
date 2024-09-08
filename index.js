@@ -116,6 +116,7 @@ class RelayAccessory {
             if (accessory === undefined) {
                 console.warn(`required pin ${pin} is not defined`)
             } else {
+                accessory.setRelayState(state)
                 accessory.relayService
                     .getCharacteristic(Characteristic.On)
                     .updateValue(state);
