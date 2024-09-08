@@ -7,24 +7,26 @@
     },
     "description": "4 Channel Relay",
     "accessories": [{
-            "accessory": "Relay",
+            "accessory": "Front Garden Irrigation",
             "name": "Living Room",
             "pin": 11,
+            "requires": 15,
             "invert": true,
             "intial_state": 0,
             "timeout_ms": 5000
         },
         {
-            "accessory": "Relay",
+            "accessory": "Side Garden Irrigation",
             "name": "Bedroom",
             "pin": 13,
+            "requires": 15,
             "invert": false,
             "initial_state": 1,
             "timeout_ms": 10000
         },
         {
             "accessory": "Relay",
-            "name": "Kitchen",
+            "name": "Main Valve",
             "pin": 15
         },
         {

@@ -1,7 +1,7 @@
 {
     "name": "homebridge-relays",
     "version": "2.0.0",
-    "description": "Raspberry Pi relay plugin for homebridge",
+    "description": "Raspberry Pi relay plugin for homebridge with global relay support",
     "license": "MIT",
     "keywords": [
         "homebridge-plugin",
@@ -13,18 +13,18 @@
         "node": ">=8.15.0",
         "homebridge": ">=0.4.45"
     },
-    "author": "Smartech",
+    "author": "Smartech forked by Doctor Eval",
     "repository": {
         "type": "git",
-        "url": "git://github.com/smartechru/homebridge-relays.git"
+        "url": "git://github.com/doctor-eval/homebridge-relays.git"
     },
     "dependencies": {
         "rpio": "^2.4.2"
     },
     "bugs": {
-        "url": "https://github.com/smartechru/homebridge-relays/issues"
+        "url": "https://github.com/doctor-eval/homebridge-relays/issues"
     },
-    "homepage": "https://github.com/smartechru/homebridge-relays#readme",
+    "homepage": "https://github.com/doctor-eval/homebridge-relays#readme",
     "main": "index.js",
     "devDependencies": {},
     "scripts": {
