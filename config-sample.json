@@ -7,7 +7,7 @@
     },
     "description": "4 Channel Relay",
     "accessories": [{
-            "accessory": "Front Garden Irrigation",
+            "accessory": "Relay",
             "name": "Living Room",
             "pin": 11,
             "requires": 15,
@@ -16,7 +16,7 @@
             "timeout_ms": 5000
         },
         {
-            "accessory": "Side Garden Irrigation",
+            "accessory": "Relay",
             "name": "Bedroom",
             "pin": 13,
             "requires": 15,
@@ -33,6 +33,14 @@
             "accessory": "Relay",
             "name": "Garage Door",
             "pin": 29
+        },
+        {
+            "accessory": "Timer",
+            "name": "Garden Watering",
+            "sequence": [
+                { "pin": 11, "seconds": 600 },
+                { "pin": 13, "seconds": 600 }
+            ]
         }
     ],
     "platforms": []

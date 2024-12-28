@@ -10,6 +10,7 @@
 var rpio = require('rpio');
 let Service, Characteristic;
 
+// Map of pin-to-relay-accessory
 /** @type { Map<number, RelayAccessory> }} */
 let allRelays = new Map()
 
@@ -17,6 +18,18 @@ module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     homebridge.registerAccessory("homebridge-relays", "Relay", RelayAccessory);
+    homebridge.registerAccessory("homebridge-relays", "Timer", TimerAccessory);
+}
+
+function setRelayState(pin, value) {
+    const relay = allRelays.get(pin)
+    if (relay !== undefined) {
+        relay.log.info(`set relay ${relay.name} (pin ${pin}) to ${value}`)
+        relay.setRelayState(value)
+        relay.relayService
+            .getCharacteristic(Characteristic.On)
+            .setValue(value)
+    }
 }
 
 class RelayAccessory {
@@ -46,7 +59,7 @@ class RelayAccessory {
     }
 
     identify(callback) {
-        this.log.debug("Accessory identified");
+        this.log.info("Accessory identified");
         callback(null);
     }
 
@@ -71,13 +84,13 @@ class RelayAccessory {
         }
 
         /* GPIO write operation */
-        this.log.debug("Pin %d status: %s", this.pin, value);
+        this.log.info("Pin %d (%s) status: %s", this.pin, this.name, value);
         rpio.write(this.pin, this.gpioValue(value));
 
         /* turn off the relay if timeout is expired */
         if (value && this.timeout > 0) {
             this.timerId = setTimeout(() => {
-                this.log.debug("Pin %d timed out. Turned off", this.pin);
+                this.log.info("Pin %d timed out. Turned off", this.pin);
                 rpio.write(this.pin, this.gpioValue(false));
                 this.timerId = -1;
 
@@ -135,7 +148,7 @@ class RelayAccessory {
             .getCharacteristic(Characteristic.On)
             .on('get', callback => {
                 this.state = this.getRelayState();
-                this.log.debug("Status:", this.state ? "ON" : "OFF");
+                this.log.info("Status:", this.state ? "ON" : "OFF");
                 callback(null, this.state);
             })
             .on('set', (value, callback) => {
@@ -145,5 +158,132 @@ class RelayAccessory {
             });
 
         return [this.informationService, this.relayService];
+    }
+}
+
+class TimerAccessory {
+    constructor(log, config) {
+        /* log instance */
+        this.log = log;
+
+        /* read configuration */
+        this.name = config.name;
+
+        // timer is not-null if the service is operating.
+        this.timerId = null
+
+        // index of the sequence currently running
+        this.currentSequence = null
+
+        // the next index of the relay sequence to be started.
+        this.nextSequence = null
+
+        // array of { pin, seconds }
+        this.sequence = config.sequence
+
+        /* run service */
+        this.timerService = new Service.Switch(this.name);
+    }
+
+    identify(callback) {
+        callback(null);
+    }
+
+    stopTimer() {
+        this.log.info("stopping timer")
+
+        if (this.timerId != null) {
+            clearTimeout(this.timerId)
+            this.timerId = null
+        }
+
+        if (this.currentSequence != null) {
+            setRelayState(this.sequence[this.currentSequence].pin, false)
+        }
+
+        this.currentSequence = null
+        this.nextSequence = null
+
+        this.timerService
+            .getCharacteristic(Characteristic.On)
+            .updateValue(false);
+    }
+
+    startTimer() {
+        // TODO: this just clears the timeout after 5 seconds
+        this.log.info("starting timer")
+        if (this.timerId != null) {
+            clearTimeout(this.timerId)
+        }
+
+        this.timerService
+            .getCharacteristic(Characteristic.On)
+            .updateValue(true);
+
+        this.nextSequence = 0
+        this.startNextRelay()
+    }
+
+    // Start the next timer. Overwrites any existing timer.
+    // May end up calling "stopTimer" if there are no more relays to start.
+    startNextRelay() {
+        // Stop the current relay, if there is one.
+        if (this.currentSequence != null) {
+            setRelayState(this.sequence[this.currentSequence].pin, false)
+        }
+
+        // Are we done yet?
+        if (this.nextSequence >= this.sequence.length) {
+            this.stopTimer()
+            return
+        }
+
+        this.currentSequence = this.nextSequence++
+        const seq = this.sequence[this.currentSequence]
+
+        setRelayState(seq.pin, true)
+        this.timerId = setTimeout(() => this.startNextRelay(), seq.seconds * 1000)
+    }
+
+    getTimerState() {
+        // TODO: return boolean
+        return this.timerId != null
+    }
+
+    setTimerState(value) {
+
+        const currentState = (this.timerId != null)
+        // If we're not changing anything
+        if (Boolean(value) === currentState) {
+            return
+        }
+
+        // Otherwise the requested value is different from the state.
+        if (this.timerId != null) {
+            this.stopTimer()
+        } else {
+            this.startTimer()
+        }
+    }
+
+    getServices() {
+        this.informationService = new Service.AccessoryInformation();
+        this.informationService
+            .setCharacteristic(Characteristic.Manufacturer, 'Smart Technology')
+            .setCharacteristic(Characteristic.Model, 'Multi-Relay Timer');
+
+        /* timer control */
+        this.timerService
+            .getCharacteristic(Characteristic.On)
+            .on('get', callback => {
+                this.state = this.getTimerState();
+                callback(null, this.state);
+            })
+            .on('set', (value, callback) => {
+                this.setTimerState(value);
+                callback(null);
+            });
+
+        return [this.informationService, this.timerService];
     }
 }

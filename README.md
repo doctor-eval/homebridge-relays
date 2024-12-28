@@ -1,16 +1,18 @@
 # Homebridge Relays
 
-Controls 4 channel relays with a Raspberry Pi using HomeKit.
+Control multi-channel relay boards with a Raspberry Pi using HomeKit.
 
 This fork adds the ability to "require" additional relays to be set,
-for example to control the main valve in a watering system.
+for example to control the main valve in a watering system. It also adds
+a new "Timer" accessory which can be used to control a sequence of relays,
+for example to turn watering values on and off in a sequence.
 
 ## Hardware
 
 The hardware is quite simple to construct.
 
 1. Raspberry Pi 3 Model B
-2. 4-relay (or more) module pins are connected to the GPIO pins.
+2. 4- (or more) relay module pins, connected to the GPIO pins.
 
 The raspberry pi can then control the state of the relays.
 
@@ -23,6 +25,29 @@ below.
 When one or more relays "requires" another pin, that pin is turned on. When no more relays 
 require the pin, it is turned off. The required pin is otherwise identical to other pins and can be
 turned on and off manually as needed.
+
+## Timer Accessory
+
+The new "Timer" accessory lets you configure a set of relays to be operated in sequence.
+The example configuration makes this obvious:
+
+        {
+            "accessory": "Timer",
+            "name": "Garden Watering",
+            "sequence": [
+                { "pin": 11, "seconds": 300 },
+                { "pin": 13, "seconds": 600 }
+            ]
+        }
+
+In this example, pin 11 is turned onl after 300 seconds it is turned off, and
+pin 13 is turned on. After 600 seconds, pin 13 is turned off and the timer ends.
+Only one pin in the timer sequence is active at any time, but the "requires" property
+is honoured (if set).
+
+The timer is presented as a simple switch (like the other relays). Turning the timer switch
+ON starts the sequence. Turning it off stops the sequence. The timer turns itself off when
+it's finished.
 
 ## Installation
 
@@ -69,6 +94,14 @@ turned on and off manually as needed.
       "accessory": "Relay",
       "name": "Garage Door",
       "pin": 29
+    },
+    {
+      "accessory": "Timer",
+      "name": "Garden Watering",
+      "sequence": [
+        { "pin": 11, "seconds": 300 },
+        { "pin": 13, "seconds": 600 }
+      ]
     }
   ],
   "platforms": []
